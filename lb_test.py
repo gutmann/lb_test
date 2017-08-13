@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # set up constants for calculations
-omega   = 0.9         # relaxation term
+omega   = 0.5         # relaxation term
 density = 1.0
 t1      = 4.0/9       # non-movement coefficient
 t2      = 1.0/9       # moving perpendicular
@@ -52,6 +52,7 @@ def latb2d(F=None, BOUND=None, slow=False, ux=None, uy=None, maxsteps=4000, mins
     ONy = ON[1]
     ON = ONx*ny + ONy
 
+    print(ON.shape)
     TO_REFLECT=np.array([ON+CI[0], ON+CI[1], ON+CI[2], ON+CI[3],
                 ON+CI[4], ON+CI[5], ON+CI[6], ON+CI[7]])
     REFLECTED= np.array([ON+CI[4], ON+CI[5], ON+CI[6], ON+CI[7],
@@ -59,24 +60,28 @@ def latb2d(F=None, BOUND=None, slow=False, ux=None, uy=None, maxsteps=4000, mins
     TO_REFLECT = TO_REFLECT.flat[:]
     REFLECTED = REFLECTED.flat[:]
 
-    # F[[0,1,7],0,:]*=1.1
-    # F[[0,1,7],-1,:]*=1.1
-    # F[[3,4,5],0,:]/=1.1
-    # F[[3,4,5],-1,:]/=1.1
-    F[[0,1,7],:,0]*=1.1
+    # F[[0,1,7],:,:]*=1.1
+    # F[[0,1,7],:,:]*=1.1
+    # F[[3,4,5],:,:]/=1.1
+    # F[[3,4,5],:,:]/=1.1
+    F[[0,1,7],0, 1:-1]*=1.1
+    F[[0,1,7],-1,1:-1]*=1.1
+    F[[3,4,5],0, 1:-1]/=1.1
+    F[[3,4,5],-1,1:-1]/=1.1
+    F[[0,1,7],:, 0]*=1.1
     F[[0,1,7],:,-1]*=1.1
-    F[[3,4,5],:,0]/=1.1
+    F[[3,4,5],:, 0]/=1.1
     F[[3,4,5],:,-1]/=1.1
-    F[4]/=1.1
-    F[4]/=1.1
-    F[0]*=1.1
-    F[0]*=1.1
+    # F[4]/=1.1
+    # F[4]/=1.1
+    # F[0]*=1.1
+    # F[0]*=1.1
     # F[:,0,:]=0
     # F[:,-1,:]=0
-    F[[5,6,7],0,:]=0
-    F[[5,6,7],-1,:]=0
-    F[[3,2,1],0,:]=0
-    F[[3,2,1],-1,:]=0
+    # F[[5,6,7],0,:]=0
+    # F[[5,6,7],-1,:]=0
+    # F[[3,2,1],0,:]=0
+    # F[[3,2,1],-1,:]=0
 
     avu = 1
     prevavu = 1
@@ -88,14 +93,6 @@ def latb2d(F=None, BOUND=None, slow=False, ux=None, uy=None, maxsteps=4000, mins
     while ((ts < maxsteps) and (1e-10 < abs((prevavu-avu)/avu))) or (ts < minsteps):
 
         # Propagate
-        # F[4,1:-1,1:-1] = F[4,2:  ,1:-1]
-        # F[5,1:-1,1:-1] = F[5,2:  ,2:  ]
-        # F[6,1:-1,1:-1] = F[6,1:-1,2:  ]
-        # F[7,1:-1,1:-1] = F[7,0:-2,2:  ]
-        # F[0,1:-1,1:-1] = F[0,0:-2,1:-1]
-        # F[1,1:-1,1:-1] = F[1,0:-2,0:-2]
-        # F[2,1:-1,1:-1] = F[2,1:-1,0:-2]
-        # F[3,1:-1,1:-1] = F[3,2:  ,0:-2]
         F[0,1:-1,1:-1] = F[0,2:  ,1:-1]
         F[1,1:-1,1:-1] = F[1,2:  ,2:  ]
         F[2,1:-1,1:-1] = F[2,1:-1,2:  ]
@@ -163,7 +160,7 @@ def latb2d(F=None, BOUND=None, slow=False, ux=None, uy=None, maxsteps=4000, mins
 
             plt.subplot(2,2,4)
             plt.imshow(DENSITY)
-            plt.clim(0.8,0.9)
+            plt.clim(0.8,1.0)
             plt.colorbar()
 
             plt.show()
@@ -180,11 +177,13 @@ def main():
     BOUND=np.zeros((nx,ny))
     for i in range(ny):
         z[i] = np.mean(z[max(i-2,0):min(i+2,ny-1)])
-    BOUND[:int(z[i]),i]=1
+        BOUND[:int(z[i]),i]=1
     BOUND = BOUND>0.5
 
 
-    F = latb2d(slow=True, BOUND=surface)
+    BOUND[:]=False
+    BOUND[ nx/3:-nx/3,ny/2] = True
+    F = latb2d(slow=True, BOUND=BOUND)
 
     print("Completed!")
 
